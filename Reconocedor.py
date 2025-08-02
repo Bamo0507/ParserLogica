@@ -1,4 +1,5 @@
-import ply.lex as lexer
+import ply.lex as lex
+import ply.yacc as yacc
 
 # Declarar todos los tokens que vamos a usar para el alfabeto
 tokens = (
@@ -13,7 +14,7 @@ tokens = (
     'DER_PAREN', # )
 )
 
-# Regex para reconocer tokens
+# Regex para reconocer tokens ---------------------------------
 def t_VARIABLE(t):
     r'[pqrstuvwxyz]'
     return t
@@ -48,5 +49,69 @@ def t_error(t):
     print(f"Caracter no valido: {t.value[0]!r}")
     t.lexer.skip(1)
 
-# CONSTRUCCION LEXER
-lexer = lexer.lex()
+# CONSTRUCCION LEXER----------------------------------------------
+lexer = lex.lex()
+
+# ================================================================
+# Comenzar con lo del parser
+
+precedence = (
+    ('right', 'IFF'),
+    ('right', 'IMPLICACION'),
+    ('left', 'DISYUNCION'),
+    ('left', 'CONJUNCION'),
+    ('right', 'NEGACION'),
+)
+
+def p_expresion_variable(p):
+    'expresion : VARIABLE'
+    p[0] = ('VAR', p[1])
+
+def p_expresion_constante(p):
+    'expresion : CONSTANTE'
+    p[0] = ('CONST', p[1])
+
+def p_expresion_negacion(p):
+    'expresion : NEGACION expresion'
+    p[0] = ('NOT', p[2])
+
+def p_expresion_binaria(p):
+    '''expresion : expresion CONJUNCION expresion
+                  | expresion DISYUNCION expresion
+                  | expresion IMPLICACION expresion
+                  | expresion IFF expresion'''
+    op_map = {
+        'CONJUNCION': 'AND',
+        'DISYUNCION': 'OR',
+        'IMPLICACION': 'IMPLIES',
+        'IFF': 'IFF',
+    }
+    token_type = p.slice[2].type
+    p[0] = (op_map[token_type], p[1], p[3])
+
+def p_expresion_parentesis(p):
+    'expresion : IZQ_PAREN expresion DER_PAREN'
+    p[0] = p[2]
+
+def p_error(p):
+    if p is None:
+        print('fin de entrada inesperado')
+    else:
+        print(f"token inesperado {p.type!r}")
+
+# CONSTRUCCION PARSER
+parser = yacc.yacc()
+
+
+def main():
+    ruta = 'Pruebas.txt'
+
+    with open(ruta, 'r') as archivo:
+        for linea in archivo:
+            linea = linea.strip()
+            if not linea:
+                continue
+            resultado = parser.parse(linea, lexer=lexer)
+            print(f"{linea} -> {resultado}")
+
+main()
