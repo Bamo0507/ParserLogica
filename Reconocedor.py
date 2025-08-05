@@ -1,5 +1,6 @@
 import ply.lex as lex
 import ply.yacc as yacc
+from graphviz import *
 
 # Declarar todos los tokens que vamos a usar para el alfabeto
 tokens = (
@@ -103,15 +104,56 @@ def p_error(p):
 parser = yacc.yacc()
 
 
+def Arbol_Sintactico(expression, graph=None, parent=None):
+    if graph is None:
+        graph = Digraph()
+    
+    operadores_binarios = {'AND': '^', 'OR': '|', 'IMPLIES': '=>', 'IFF': '`<=>`'}
+    variables_constantes = ['VAR', 'CONST']
+
+    
+
+    for i in range(len(expression)):  
+        
+
+
+        if expression[i] == 'NOT':
+            padre = '~'
+            operator = padre
+            operand = expression[i+1]
+            graph.node(str(id(expression)), label=operator)
+            if parent is not None:
+                graph.edge(str(id(parent)), str(id(expression)))
+            Arbol_Sintactico(operand, graph, expression)
+        elif expression[i] in operadores_binarios:
+            operator = operadores_binarios[expression[i]]
+            left_operand = expression[i-1]
+            right_operand = expression[i+1]
+            graph.node(str(id(expression)), label=operator)
+            if parent is not None:
+                graph.edge(str(id(parent)), str(id(expression)))
+            Arbol_Sintactico(left_operand, graph, expression)
+            Arbol_Sintactico(right_operand, graph, expression)
+        elif expression[i] in variables_constantes:
+            graph.node(str(id(expression)), label=expression[i+1])
+            if parent is not None:
+                graph.edge(str(id(parent)), str(id(expression)))
+
+    return graph
+    
+
 def main():
     ruta = 'Pruebas.txt'
 
     with open(ruta, 'r') as archivo:
-        for linea in archivo:
+        for i, linea in enumerate(archivo):
             linea = linea.strip()
             if not linea:
                 continue
             resultado = parser.parse(linea, lexer=lexer)
-            print(f"{linea} -> {resultado}")
+            print(f"{linea} -> {resultado} ")
+            grafico = Arbol_Sintactico(resultado)
+            grafico.render(f'arbol_{i}', format='png', cleanup=True)
+            
 
 main()
