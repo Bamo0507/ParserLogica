@@ -127,8 +127,8 @@ def Arbol_Sintactico(expression, graph=None, parent=None):
             Arbol_Sintactico(operand, graph, expression)
         elif expression[i] in operadores_binarios:
             operator = operadores_binarios[expression[i]]
-            left_operand = expression[i-1]
-            right_operand = expression[i+1]
+            left_operand = expression[i+1]
+            right_operand = expression[i-1]
             graph.node(str(id(expression)), label=operator)
             if parent is not None:
                 graph.edge(str(id(parent)), str(id(expression)))
